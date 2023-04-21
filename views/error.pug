@@ -1,0 +1,16 @@
+html
+  head
+  title Error - Blue Birdie
+    link(rel='stylesheet', href='https://cdn.jsdelivr.net/npm/@tailwindcss/ui@latest/dist/tailwind-ui.min.css')
+  body.bg-gradient-to-r.from-blue-500.to-purple-500
+    .min-h-screen.flex.flex-col.items-center.justify-center.py-12.px-4
+      .max-w-md.w-full.bg-white.shadow-lg.rounded-lg.overflow-hidden
+        .bg-gray-50.p-6
+          h2.mb-6.text-center.text-3xl.leading-9.font-extrabold.text-gray-900
+            | Oops!
+          h2.text-center.text-2xl.leading-9.font-bold.text-gray-700
+            | #{message}
+        if message && link
+            a.mt-6.text-center.text-1xl.leading-9.font-extrabold.text-blue-500.block(href='/signin')
+              | Click here to Sign In
+        a.mt-6.text-center.text-lg.leading-9.font-medium.text-blue-500.block(href='/') Go Back
