@@ -7,6 +7,7 @@ const RedisStore = require("connect-redis");
 const { promisify } = require("util");
 const { formatDistance } = require("date-fns");
 const dotenv = require("dotenv");
+const bodyParser = require("body-parser");
 const app = express();
 const redisClient = redis.createClient({
   host: "localhost",
@@ -26,7 +27,8 @@ app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
 
 //configure middleware
-app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: false }));
 app.use(
   session({
     store: redisStore,
@@ -64,33 +66,18 @@ app.get("/", (req, res) => {
     const currentUsername = req.session.username;
 
     console.log('Printing timeline for user: ', req.session.username);
-    getTimeLineForCurrentUser(req.session.username)
-      .then((timeline) => {
-        console.log('\n\n\n\nTimeline:');
-        console.log(timeline);
-      });
-
-
-    getUsersToFollowForCurrentUser(currentUsername)
-      .then((usersToFollow) => {
-        console.log(usersToFollow);
-        getTimeLineForCurrentUser(currentUsername).then((timelines) => {
-          console.log(timelines.length);
-          res.render('dashboard', {
-            username: req.session.username,
-            users: usersToFollow,
-            timeline: timelines
-          });
-        })
-      });
+    
+      getTimeLineForCurrentUser(currentUsername).then((timelines) => {
+        console.log(timelines.length);
+        res.render('dashboard', {
+          username: req.session.username,
+          timeline: timelines
+        });
+      })
     
   } else {
     res.redirect("/signin");
 }})
-
-
-
-
 
 
 
@@ -105,6 +92,21 @@ app.get("/signin", (req, res) => {
 
 app.get("/login", (req, res) => {
   res.redirect("/signin");
+})
+
+app.get("/follow", (req, res) => {
+  if (req.session.userid) {
+    getUsersToFollowForCurrentUser(req.session.username)
+      .then((usersToFollow) => {
+        console.log(usersToFollow);
+        res.render("followPeople", {
+          username: req.session.username,
+          users: usersToFollow
+        })
+      })
+  } else {
+    res.render("signin");
+  }
 })
 
 app.post("/signin", (req, res) => {
@@ -165,7 +167,8 @@ app.post("/signup", (req, res) => {
 
 app.get('/post', (req, res) => {
   if (req.session.userid) {
-    res.render("post");
+    // res.render("post");
+    res.redirect('/');
   } else {
     res.redirect("/signin");
   }
@@ -187,23 +190,6 @@ app.post('/post', (req, res) => {
         .then((postId) => {
           console.log('\n\n\nPost Id:', postId);
         })
-
-
-
-          TODO:
-          //Handle timelines for user
-
-
-          // alPush(`timeline:${req.session.username}`, postId);
-
-          // redisClient.hGet(`followers:${req.session.username}`)
-          //             .then((followers) => {
-          //               for (const follower of followers) {
-          //                 redisClient.lPush(`timeline:${follower}`, postId);
-          //               }
-          //             })
-        
-
   
     //It is better to redirect to dashboard instead of rendering dashboard
     //If we render to dashboard url will still be '/post' and if the user refreshes
@@ -222,7 +208,6 @@ app.post("/follow", (req, res) => {
     return;
   }
 
-
   //First, we get the user that the current user wants to follow
   //It is saved in the req body
   const { username } = req.body;
@@ -238,15 +223,38 @@ app.post("/follow", (req, res) => {
                                   console.log('Error in following user!', err);
                                   res.status(500).send('Error following user.');
                                 });
-  
-  //If following another user is unsucessful, we end the connection with user.
-  //res.end();
 
   console.log(`${currentUsername} is now following ${username}`);
 
 });
 
 
+app.post("/like", (req, res) => {
+  const { postId, isLike } = req.body;
+
+  console.log('POST ID:', postId);
+  console.log('IS LIKED?', isLike);
+  // console.log('Req body:', req);
+  // console.log('Res body:', res);
+
+  // Now we can increase the like counter in redis
+  handlePostLikeByUser(postId, req)
+        .then(res.send({ message: 'Post Liked!' }))
+  
+  
+})
+
+async function handlePostLikeByUser(postId, req) {
+  const currentUsername = req.session.username;
+
+  //Increasing the like counter in Redis
+  const detailsAboutPost = await redisClient.hGetAll(`post:${postId}`);
+
+  
+  console.log('post post post id', postId);
+  console.log(detailsAboutPost);
+  
+}
 
 
 
@@ -257,6 +265,7 @@ async function handlePostMessage (userId, currentUsername, message) {
                           'userId': userId,
                           'username': currentUsername,
                           'message': message,
+                          'likes': 1,           //When a user posts, likes starts from 1.
                           'timestamp': Date.now()});
  
 
@@ -268,22 +277,6 @@ async function handlePostMessage (userId, currentUsername, message) {
   for (const user of followersOfCurrentUser) {
     await redisClient.sAdd(`timeline:${user}`, postId.toString());
   }
-
-  //await redisClient.sAdd(`timeline:${currentUsername}`, postId);
-  //const followersOfCurrentUser = redisClient.
-  //await redisClient.lPush(`timeline:${currentUsername}`, postId);
-
-
-  /*
-  const followers = await redisClient.sMembers(`followers:${currentUsername}`);
-  const followings = await redisClient.sMembers(`followings:${currentUsername}`);
-
-  for (const follower of followers) {
-    if (followings.includes(follower)){
-      redisClient.sAdd(`timeline:${follower}`, postId);
-    }
-  }  
-*/
 
   return postId;
 }
@@ -297,23 +290,27 @@ async function getTimeLineForCurrentUser(username) {
   console.log('\n\n\n\n POSTSID:', postsId);
 
   for (const post of postsId) {
-     const postKeys = await redisClient.hGetAll(`post:${post}`);
+    const postKeys = await redisClient.hGetAll(`post:${post}`);
 
-     const timestamp = postKeys.timestamp;
-     const timeString = formatDistance(new Date(), new Date(parseInt(parseInt(timestamp))));
-     console.log(timestamp);
-     console.log(timeString);
+    const timestamp = postKeys.timestamp;
+    const timeString = formatDistance(new Date(), new Date(parseInt(parseInt(timestamp))));
+     
+    const likes = postKeys.likes;
 
-     timeline.push({
+    console.log('Number of likes:', likes);
+    console.log('PostID in timeline:', parseInt(postKeys.postId));
+    timeline.push({
+      postId: parseInt(postKeys.postId),
       message: await redisClient.hGet(`post:${post}`, 'message'),
       author: await redisClient.hGet(`post:${post}`, 'username'),
-      timeString: timeString
-     });
+      likes: likes,
+      timeString: timeString,
+      isLiked: "false"      
+    });
     
   }
-  console.log(`TIMELINE: `, timeline);
+  console.log(`TIMELINE FOR CURRENT USER: `, timeline);
    return timeline;
-
 }
 
 
@@ -405,66 +402,6 @@ const handleSignIn = (username, password, req, res) => {
 }
 
 
-
-// async function getTimeLineForCurrentUser(currentUsername) {
-//   const timeline = [];
-//   const posts = await redisClient.sRandMember(`timeline:${currentUsername}`);
-//   console.log(`Getting posts `, posts);
-//   console.log('Getting timeline for: ', currentUsername);
-//   for (const post of posts) {
-//     const timestamp = await redisClient.hGet(`posts:${post}`, 'timestamp');
-//     const timeString = formatDistance(new Date(), new Date(parseInt(timestamp)));
-
-//     timeline.push({
-//       message: await redisClient.hGet(`post:${post}`, 'message'),
-//       author: await redisClient.hGet(`post:${post}`, 'username'),
-//       timeString: timeString
-//     })
-//   }
-  
-//   const followers = await redisClient.sMembers(`followers:${currentUsername}`);
-//   const followerTimeline = followers.map(follower => `timeline:${follower}`)
-//   const followerPosts = await redisClient.sUnion(...followerTimeline);
-
-//   for (const post of followerPosts) {
-//     const timestamp = await redisClient.hGet(`post:${post}`);
-//     const timeString = formatDistance(new Date(), new Date(parseInt(timestamp)));
-
-//     timeline.push({
-//       message: await redisClient.hGet(`post:${post}`, 'message'),
-//       author: await redisClient.hGet(`post:${post}`, 'username'),
-//       timeString: timeString
-//     })
-    
-//   }
-
-//   return timeline;
-// }
-
-// async function getTimeLineForCurrentUser(currentUsername) {
-//   const timeline = [];
-//   const postIds = await redisClient.sMembers(`timeline:${currentUsername}`);
-//   const postDatas = await redisClient.hGetAll(postIds.map(id => `post:${id}`), ['username', 'message', 'timestamp']);
-//   console.log(postDatas);
-//   console.log('Getting timeline for: ', currentUsername);
-//   for (let i = 0; i < postIds.length; i++) {
-//     const postId = postIds[i];
-//     const [username, message, timestamp] = postDatas[i];
-//     const timeString = formatDistance(new Date(), new Date(parseInt(timestamp)));
-
-//     timeline.push({
-//       message: message,
-//       author: username,
-//       timeString: timeString
-//     })
-//   }
-
-//   return timeline;
-// }
-
-
-
-
 async function getUsersToFollowForCurrentUser(currentUsername) {
     //We want to display those users which we haven't followed.
     //First, we get all users from Redis, then we get the followers
@@ -491,14 +428,6 @@ async function saveSessionAndRenderDashboard(userId, username, req, res) {
   
 
   res.redirect('/');
-  // getAllUsersFromRedis()
-  //         .then((allUsers) => {
-  //           console.log('\n\n\nAll users: ', allUsers);
-  //           res.render('dashboard', {
-  //             username: req.session.username,
-  //             users: allUsers
-  //           })
-  //         });
 }
 
 

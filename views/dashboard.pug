@@ -1,53 +1,70 @@
-html
+html(lang='en')
   head
-    title Dashboard - Blue Birdie
+    meta(charset='UTF-8')
+    title Blue Birdie
     link(rel='stylesheet', href='https://cdn.jsdelivr.net/npm/@tailwindcss/ui@latest/dist/tailwind-ui.min.css')
-  body.bg-gradient-to-r.from-blue-500.to-purple-500
-    div.min-h-screen.bg-gray-50.flex.flex-col.justify-center.py-12(class='sm:px-6 lg:px-8')
-      div(class='sm:mx-auto sm:w-full sm:max-w-md')
-        h2.mt-6.text-center.text-3xl.leading-9.font-extrabold.text-gray-900
-          | Welcome to your Blue Birdie dashboard #{username}!
-      div.mt-8(class='sm:mx-auto sm:w-full sm:max-w-md')
-        .bg-white.py-8.px-4.shadow(class='sm:rounded-lg sm:px-10')
-          a.mt-6.text-center.text-1xl.leading-9.font-extrabold.text-blue-500.block(href='/post')
-            | Post a message
-          p.mb-6.text-lg.text-gray-700
-            | Here are some things you can do:
-            ul.list-disc.list-inside.mb-6
-              li.text-base.text-gray-700
-                | View your profile
-              li.text-base.text-gray-700
-                | Update your account settings
-              li.text-base.text-gray-700
-                | Connect with other users
-            p.text-base.text-gray-700
-              | Thanks for using Blue Birdie!
+    link(rel='stylesheet', href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css')
+    style.
+      /* Custom styles */
+      .hover-shadow:hover {
+        text-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+      }
+  body.bg-gray-100
+    .mx-auto.max-w-xl.p-4
+      header.flex.justify-between.items-center.mb-8
+        a.text-3xl.font-bold.text-blue-500.hover-shadow.hover(href='/') Blue Birdie
+        nav
+          ul.flex.space-x-4
+            li
+              a.text-gray-600(href='/', class='hover:text-black') Home
+            li
+              a.text-gray-600(href='/follow', class='hover:text-black') Follow
+            li
+              p.text-gray-600 Hello, #{username}
+            li
+              form(action='/signout', method='POST')
+                span.block.w-full.rounded-md.shadow-sm
+                  button.w-full.flex.justify-center.py-2.px-4.border.border-transparent.text-sm.font-medium.rounded-md.text-white.bg-red-600.transition.duration-150.ease-in-out(type='submit', class='hover:bg-red-500 focus:outline-none focus:border-red-700 focus:shadow-outline-red active:bg-red-700')
+                    | Sign Out
+      main
+        section.mb-8
+          form.flex.items-center(action='/post' method='POST')
+            img.rounded-full.mr-4(src='https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?w=740&t=st=1682166300~exp=1682166900~hmac=7ddb2ef6bb1ec97daa2110c026cc498e58fce5c62b1e0d7b0ff262d4a031ac8e', height='50px' width='50px' alt='User Avatar')
+            input.border.p-2.rounded-md.w-full(type='text', placeholder="What's happening?" name="message" required='required')
+          .flex.justify-between.items-center.mt-4
+            .flex.items-center
+              button.inline-flex.items-center.px-4.py-2.bg-blue-600.border.border-transparent.rounded-md.font-semibold.text-xs.text-white.hover.bg-blue-500.focus.outline-none.focus.border-blue-700.active.bg-blue-700.transition.ease-in-out.duration-150(type='submit')
+                | Post
+              label.ml-4
+                input.mr-2(type='checkbox', checked='')
+                span.text-gray-600 Add location
+            div
+              label
+                input.mr-2(type='checkbox', checked='')
+                span.text-gray-600 Share with followers
         if timeline.length > 0
-            h3.mt-6.text-center.text-xl.leading-9.font-extrabold.text-gray-900.pb-10
-                | Latest posts
-            .flex.flex-col
-                .-my-2.py-2.overflow-x-auto(class='sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8')
-                    div(class='sm:rounded-lg')
-                        table.min-w-full
-                            tbody.bg-white
-                                each message in timeline
-
-                                    tr
-                                        td.px-6.py-4.whitespace-no-wrap.border-b.border-gray-200.text-sm.leading-5.font-medium.text-gray-900
-                                            =message.message
-                                            p.pt-3.whitespace-no-wrap.text-xs.leading-5.text-gray-500
-                                                | #{message.author}, #{message.timeString} ago
-                h3.mt-6.text-center.text-xl.leading-9.font-extrabold.text-gray-900
-                    | Follow someone new
-                ul.mt-6
-                    each userKey in users
-                        li.text-center.text-xl.leading-9.font-extrabold.text-gray-600
-                            form(action='/follow', method='POST')
-                                input(type='hidden', name='username', value=userKey.username)
-                                button.inline-flex.justify-center.py-2.px-4.border.border-transparent.text-sm.leading-5.font-medium.rounded-md.text-white.bg-blue-600.transition.duration-150.ease-in-out(type='submit', class='hover:bg-blue-500 focus:outline-none focus:border-blue-700 focus:shadow-outline-blue active:bg-blue-700')
-                                  | #{userKey.username}
-
-        form(action='/signout', method='POST')
-          span.block.w-full.rounded-md.shadow-sm
-            button.w-full.flex.justify-center.py-2.px-4.border.border-transparent.text-sm.font-medium.rounded-md.text-white.bg-red-600.transition.duration-150.ease-in-out(type='submit', class='hover:bg-red-500 focus:outline-none focus:border-red-700 focus:shadow-outline-red active:bg-red-700')
-              | Sign Out
+          each message in timeline
+            section.bg-white.rounded-md.p-4
+              .flex.items-center.space-x-4
+                img.rounded-full(src='https://img.freepik.com/premium-vector/people-profile-graphic_24911-21374.jpg?w=740', height='50px' width='50px' alt='User Avatar')
+                div
+                  h2.font-bold.text-gray-800 #{message.author}
+                  p.text-gray-600 @#{message.author}
+              p.text-gray-800.mt-4 
+                | #{message.message}
+              .flex.justify-between.items-center.mt-4
+                .flex.items-center.space-x-4
+                  form(action='/like', method='POST')
+                    button.flex.items-center.space-x-2.text-gray-600(class='hover:text-red-500')
+                      i.far.fa-heart.text-lg.ml-2(id='like-button' data-liked=message.isLiked data-id=message.postId class='hover:text-red-500 active:text-red-500')
+                      span | #{message.likes}
+                .mt-4.flex.justify-between.items-center
+                  .flex.items-center.space-x-2
+                    button.flex.items-center.space-x-2.text-gray-600.hover-shadow.hover(class='hover:text-red-500')
+                      i.fa.fa-angle-left.text-lg.ml-2
+                      span
+                  .text-gray-600 | #{message.timeString} ago
+        if timeline.length == 0
+          section.bg-white.rounded-md.p-4
+              .flex.items-center.space-x-4
+                span Follow someone and let them post for posts to appear here

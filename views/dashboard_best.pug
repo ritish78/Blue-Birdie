@@ -1,0 +1,94 @@
+html
+  head
+    title Dashboard - Blue Birdie
+      link(rel='stylesheet', href='https://cdn.jsdelivr.net/npm/@tailwindcss/ui@latest/dist/tailwind-ui.min.css')
+      link(rel='stylesheet', href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css')
+ 
+  body.bg-gradient-to-r.from-blue-500.to-purple-500
+    div.min-h-screen.bg-gray-50.flex.flex-col.justify-center.py-12(class='sm:px-6 lg:px-8')
+      div(class='sm:mx-auto sm:w-full sm:max-w-md')
+        h2.mt-6.text-center.text-3xl.leading-9.font-extrabold.text-gray-900
+          | Welcome to your Blue Birdie dashboard #{username}!
+      div.mt-8(class='sm:mx-auto sm:w-full sm:max-w-md')
+        .bg-white.py-8.px-4.shadow(class='sm:rounded-lg sm:px-10')
+          a.mt-6.text-center.text-1xl.leading-9.font-extrabold.text-blue-500.block(href='/post')
+            | Post a message
+          p.mb-6.text-lg.text-gray-700
+            | Here are some things you can do:
+            ul.list-disc.list-inside.mb-6
+              li.text-base.text-gray-700
+                | View your profile
+              li.text-base.text-gray-700
+                | Update your account settings
+              li.text-base.text-gray-700
+                | Connect with other users
+            p.text-base.text-gray-700
+              | Thanks for using Blue Birdie!
+        if timeline.length > 0
+            h3.mt-6.text-center.text-xl.leading-9.font-extrabold.text-gray-900.pb-10
+                | Latest posts
+            .flex.flex-col
+                .-my-2.py-2.overflow-x-auto(class='sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8')
+                    div(class='sm:rounded-lg')
+                        table.min-w-full
+                            tbody.bg-white
+                                each message in timeline
+
+                                    tr
+                                        td.px-6.py-4.whitespace-no-wrap.border-b.border-gray-200.text-sm.leading-5.font-medium.text-gray-900
+                                            =message.message
+                                            p.pt-3.whitespace-no-wrap.text-xs.leading-5.text-gray-500
+                                                | #{message.author}, #{message.timeString} ago
+                          
+                                            form(action='/like', method='POST')
+                                              p.pt-3.inline-flex.w-6.h-6.whitespace-no-wrap.text-sm.leading-5.text-gray-500
+                                                | #{message.likes}
+                                                button.like-btn.inline-flex.items-center.justify-center.w-6.h-6.whitespace-no-wrap.text-xs.leading-5.text-gray-500
+                                                  i.far.fa-heart.text-lg.ml-2(id='like-button' data-liked=message.isLiked data-id=message.postId class='hover:text-red-500 active:text-red-500')
+
+        h3.mt-6.text-center.text-xl.leading-9.font-extrabold.text-gray-900
+          | Follow someone new
+        ul.mt-6
+            each userKey in users
+                li.text-center.text-xl.leading-9.font-extrabold.text-gray-600
+                    form(action='/follow', method='POST')
+                        input(type='hidden', name='username', value=userKey.username)
+                        button.inline-flex.justify-center.py-2.px-4.border.border-transparent.text-sm.leading-5.font-medium.rounded-md.text-white.bg-blue-600.transition.duration-150.ease-in-out(type='submit', class='hover:bg-blue-500 focus:outline-none focus:border-blue-700 focus:shadow-outline-blue active:bg-blue-700')
+                          | #{userKey.username}
+
+        form(action='/signout', method='POST')
+          span.block.w-full.rounded-md.shadow-sm
+            button.w-full.flex.justify-center.py-2.px-4.border.border-transparent.text-sm.font-medium.rounded-md.text-white.bg-red-600.transition.duration-150.ease-in-out(type='submit', class='hover:bg-red-500 focus:outline-none focus:border-red-700 focus:shadow-outline-red active:bg-red-700')
+              | Sign Out
+    script.
+      const likeButton = document.querySelectorAll('.like-button');
+
+      likeButton.forEach(button => {
+          button.addEventListener('click', () => {
+              //Changing the class from 'fa-heart' to 'fa-solid fa-heart'
+              if (button.classList.contains('fa-solid')) {
+                  button.classList.replace('fa-solid', 'fa-regular');
+                  button.dataset.liked = "false";
+              } else {
+                  button.classList.replace('fa-regular', 'fa-solid');
+                  button.dataset.liked = "true";
+              }
+
+                    
+              const postId = button.dataset.id;
+              const isLiked = button.dataset.liked; 
+
+              console.log(postId, isLiked);
+              const jsonBody = JSON.stringify({
+                postId: postId,
+                isLiked: isLiked
+              });
+
+              const xhr = new XMLHttpRequest();
+              xhr.open("POST", "/like");
+              xhr.setRequestHeader('Content-Type', 'application/json');
+              xhr.send(jsonBody);
+          })
+      })
+
+

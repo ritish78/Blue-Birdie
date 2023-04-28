@@ -1,0 +1,51 @@
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    title Follow Other
+    link(rel='stylesheet', href='https://cdn.jsdelivr.net/npm/@tailwindcss/ui@latest/dist/tailwind-ui.min.css')
+    link(rel='stylesheet', href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css')
+    style.
+      /* Custom styles */
+      .card:hover {
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      }
+      .hover-shadow:hover {
+        text-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+      }
+
+  body.bg-gray-100
+    .mx-auto.max-w-xl.p-4
+      header.flex.justify-between.items-center.mb-8
+        a.text-3xl.font-bold.text-blue-500.hover-shadow.hover(href='/') Blue Birdie
+        nav
+          ul.flex.space-x-4
+            li
+              a.text-gray-600(href='/', class='hover:text-black') Home
+            li
+              a.text-gray-600(href='#', class='hover:text-black') Follow
+            li
+              p.text-gray-600 Hello, #{username}
+            li
+              form(action='/signout', method='POST')
+                span.block.w-full.rounded-md.shadow-sm
+                  button.w-full.flex.justify-center.py-2.px-4.border.border-transparent.text-sm.font-medium.rounded-md.text-white.bg-red-600.transition.duration-150.ease-in-out(type='submit', class='hover:bg-red-500 focus:outline-none focus:border-red-700 focus:shadow-outline-red active:bg-red-700')
+                    | Sign Out
+      main
+        h3.mt-6.text-center.text-xl.leading-9.font-extrabold.text-gray-900
+          | Follow someone new
+        section.mb-8
+          .grid.grid-cols-3.gap-4
+          if users
+            each user in users
+                form(action='/follow', method='POST')
+                    input(type='hidden', name='username', value=user.username)
+                    .card.bg-white.rounded-md.p-4.flex.flex-col.items-center.justify-center.cursor-pointer.hover.shadow-md
+                        img.rounded-full.mb-2(src='https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?w=740&t=st=1682166300~exp=1682166900~hmac=7ddb2ef6bb1ec97daa2110c026cc498e58fce5c62b1e0d7b0ff262d4a031ac8e', height='50px' width='50px' alt='User Avatar')
+                        h2.font-bold.text-gray-800 #{user.name}
+                        p.text-gray-600 @#{user.username}
+                        button.inline-flex.justify-center.py-2.px-4.border.border-transparent.text-sm.leading-5.font-medium.rounded-md.text-white.bg-blue-600.transition.duration-150.ease-in-out(type='submit', class='hover:bg-blue-500 focus:outline-none focus:border-blue-700 focus:shadow-outline-blue active:bg-blue-700')
+                            | Follow
+        if users.length == 0
+          section.bg-white.rounded-md.p-4
+              .flex.items-center.space-x-4
+                span No users to display
