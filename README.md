@@ -19,7 +19,7 @@ sudo service redis-server start
 ````
 5. Then you can use either `Nodemon` or `npm` to start the server.
 ````
-npm app.js
+node app.js
 
 OR
 
